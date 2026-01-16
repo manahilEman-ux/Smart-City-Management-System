@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management | Smart City</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="topbar">
+        <div class="logo">SMART<span>CITY</span></div>
+        <div class="tagline">Hospital Management</div>
+    </div>
+
+    <div class="hero">
+        <h1>Hospital Patient Registration</h1>
+        <p>Manage patient records and hospital billing efficiently</p>
+    </div>
+
+    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Patient Registration Form</h2>
+
+            <div class="form-group">
+                <label>Hospital ID</label>
+                <input id="hid" type="number" placeholder="Enter hospital ID">
+            </div>
+
+            <div class="form-group">
+                <label>Patient ID</label>
+                <input id="pid" type="number" placeholder="Enter patient ID">
+            </div>
+
+            <div class="form-group">
+                <label>Patient Name</label>
+                <input id="pname" type="text" placeholder="Enter patient name">
+            </div>
+
+            <div class="form-group">
+                <label>Doctor Name</label>
+                <input id="doctor" type="text" placeholder="Enter doctor name">
+            </div>
+
+            <div class="form-group">
+                <label>Disease / Diagnosis</label>
+                <input id="disease" type="text" placeholder="Enter disease/diagnosis">
+            </div>
+
+            <div class="form-group">
+                <label>Bill Amount</label>
+                <input id="bill" type="number" placeholder="Enter bill amount">
+            </div>
+
+            <button onclick="saveHospital()">💾 Register Patient</button>
+        </div>
+    </div>
+
+    <!-- Operations Section -->
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Patient Operations</h2>
+            
+            <div class="operations">
+                <button class="operation-btn" onclick="searchPatient()">🔍 Search Patient</button>
+                <button class="operation-btn" onclick="deletePatient()">🗑️ Delete Record</button>
+                <button class="operation-btn" onclick="displayAll()">📋 View All Records</button>
+                <button class="operation-btn" onclick="showStats()">📈 View Statistics</button>
+            </div>
+
+            <div id="result" style="margin-top: 30px; padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: none;">
+                <h3 style="margin-bottom: 15px;">Result:</h3>
+                <pre id="resultContent" style="color: var(--text-primary); white-space: pre-wrap;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Smart City Management System | Hospital Management Module
+    </div>
+
+    <script>
+        function saveHospital() {
+            const hid = document.getElementById('hid').value;
+            const pid = document.getElementById('pid').value;
+            const pname = document.getElementById('pname').value;
+            const doctor = document.getElementById('doctor').value;
+            const disease = document.getElementById('disease').value;
+            const bill = document.getElementById('bill').value;
+
+            if (!hid || !pid || !pname || !doctor || !disease || !bill) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            const text = `==============================
+ SMART CITY – HOSPITAL RECORD
+==============================
+
+Hospital ID   : ${hid}
+Patient ID    : ${pid}
+Patient Name  : ${pname}
+Doctor Name   : ${doctor}
+Disease       : ${disease}
+Bill Amount   : ${bill}
+
+------------------------------
+Record Saved Successfully
+------------------------------`;
+
+            const file = new Blob([text], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(file);
+            a.download = "Hospital_Record.txt";
+            a.click();
+
+            // Save to localStorage
+            const records = JSON.parse(localStorage.getItem('hospitals') || '[]');
+            records.push({ hid, pid, pname, doctor, disease, bill });
+            records.sort((a, b) => a.pid - b.pid);
+            localStorage.setItem('hospitals', JSON.stringify(records));
+
+            // Clear form
+            document.getElementById('hid').value = '';
+            document.getElementById('pid').value = '';
+            document.getElementById('pname').value = '';
+            document.getElementById('doctor').value = '';
+            document.getElementById('disease').value = '';
+            document.getElementById('bill').value = '';
+
+            showResult('✅ Patient record saved successfully!\n\nRecord has been added to the system.');
+        }
+
+        function searchPatient() {
+            const pid = prompt('Enter Patient ID to search:');
+            if (!pid) return;
+
+            const records = JSON.parse(localStorage.getItem('hospitals') || '[]');
+            const found = records.find(r => r.pid == pid);
+
+            if (found) {
+                showResult(`🔍 Patient Found!\n\nDetails:\nHospital ID   : ${found.hid}\nPatient ID    : ${found.pid}\nPatient Name  : ${found.pname}\nDoctor Name   : ${found.doctor}\nDisease       : ${found.disease}\nBill Amount   : ${found.bill}`);
+            } else {
+                showResult('❌ Patient not found!');
+            }
+        }
+
+        function deletePatient() {
+            const pid = prompt('Enter Patient ID to delete:');
+            if (!pid) return;
+
+            const records = JSON.parse(localStorage.getItem('hospitals') || '[]');
+            const filtered = records.filter(r => r.pid != pid);
+
+            if (filtered.length < records.length) {
+                localStorage.setItem('hospitals', JSON.stringify(filtered));
+                showResult(`✅ Patient ID ${pid} deleted successfully!`);
+            } else {
+                showResult('❌ Patient not found!');
+            }
+        }
+
+        function displayAll() {
+            const records = JSON.parse(localStorage.getItem('hospitals') || '[]');
+            if (records.length === 0) {
+                showResult('No hospital records available!');
+                return;
+            }
+
+            let result = '📋 Hospital Patient Records\n\n';
+            result += 'HID | PID | Patient Name | Doctor Name | Disease | Bill\n';
+            result += '--------------------------------------------------------\n';
+            records.forEach(r => {
+                result += `${r.hid} | ${r.pid} | ${r.pname} | ${r.doctor} | ${r.disease} | ${r.bill}\n`;
+            });
+            result += `\nTotal Records: ${records.length}`;
+
+            showResult(result);
+        }
+
+        function showStats() {
+            const records = JSON.parse(localStorage.getItem('hospitals') || '[]');
+            if (records.length === 0) {
+                showResult('No data available for statistics!');
+                return;
+            }
+
+            const total = records.length;
+            const totalBill = records.reduce((sum, r) => sum + parseInt(r.bill), 0);
+            const avgBill = (totalBill / total).toFixed(2);
+            const minBill = Math.min(...records.map(r => parseInt(r.bill)));
+            const maxBill = Math.max(...records.map(r => parseInt(r.bill)));
+
+            let result = '📈 Hospital Statistics\n\n';
+            result += `Total Records      : ${total}\n`;
+            result += `Total Bill Amount  : ${totalBill}\n`;
+            result += `Average Bill       : ${avgBill}\n`;
+            result += `Minimum Bill       : ${minBill}\n`;
+            result += `Maximum Bill       : ${maxBill}`;
+
+            showResult(result);
+        }
+
+        function showResult(text) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            resultContent.textContent = text;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

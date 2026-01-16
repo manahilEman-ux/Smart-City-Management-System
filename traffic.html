@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Management | Smart City</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="topbar">
+        <div class="logo">SMART<span>CITY</span></div>
+        <div class="tagline">Traffic Management</div>
+    </div>
+
+    <div class="hero">
+        <h1>Traffic Violation Record</h1>
+        <p>Monitor and manage traffic violations efficiently</p>
+    </div>
+
+    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Violation Registration Form</h2>
+
+            <div class="form-group">
+                <label>Violation ID</label>
+                <input id="vid" type="number" placeholder="Enter violation ID">
+            </div>
+
+            <div class="form-group">
+                <label>Vehicle Number</label>
+                <input id="vehicle" type="text" placeholder="Enter vehicle number">
+            </div>
+
+            <div class="form-group">
+                <label>Driver Name</label>
+                <input id="driver" type="text" placeholder="Enter driver name">
+            </div>
+
+            <div class="form-group">
+                <label>Violation Type</label>
+                <input id="violation" type="text" placeholder="e.g., Speeding, Red Light">
+            </div>
+
+            <div class="form-group">
+                <label>Fine Amount</label>
+                <input id="fine" type="number" placeholder="Enter fine amount">
+            </div>
+
+            <button onclick="saveTraffic()">🚦 Record Violation</button>
+        </div>
+    </div>
+
+    <!-- Operations Section -->
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Violation Operations</h2>
+            
+            <div class="operations">
+                <button class="operation-btn" onclick="popViolation()">⬇️ Remove Latest</button>
+                <button class="operation-btn" onclick="peekViolation()">👁️ View Latest</button>
+                <button class="operation-btn" onclick="displayAll()">📋 View All Violations</button>
+                <button class="operation-btn" onclick="sortByFine()">📊 Sort by Fine Amount</button>
+                <button class="operation-btn" onclick="showStats()">📈 View Statistics</button>
+            </div>
+
+            <div id="result" style="margin-top: 30px; padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: none;">
+                <h3 style="margin-bottom: 15px;">Result:</h3>
+                <pre id="resultContent" style="color: var(--text-primary); white-space: pre-wrap;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Smart City Management System | Traffic Management Module
+    </div>
+
+    <script>
+        function saveTraffic() {
+            const vid = document.getElementById('vid').value;
+            const vehicle = document.getElementById('vehicle').value;
+            const driver = document.getElementById('driver').value;
+            const violation = document.getElementById('violation').value;
+            const fine = document.getElementById('fine').value;
+
+            if (!vid || !vehicle || !driver || !violation || !fine) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            const text = `==============================
+ SMART CITY – TRAFFIC VIOLATION
+==============================
+
+Violation ID   : ${vid}
+Vehicle Number : ${vehicle}
+Driver Name    : ${driver}
+Violation Type : ${violation}
+Fine Amount    : ${fine}
+
+------------------------------
+Record Saved Successfully
+------------------------------`;
+
+            const file = new Blob([text], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(file);
+            a.download = "Traffic_Record.txt";
+            a.click();
+
+            // Save to localStorage
+            const records = JSON.parse(localStorage.getItem('traffic') || '[]');
+            records.push({ vid, vehicle, driver, violation, fine });
+            localStorage.setItem('traffic', JSON.stringify(records));
+
+            // Clear form
+            document.getElementById('vid').value = '';
+            document.getElementById('vehicle').value = '';
+            document.getElementById('driver').value = '';
+            document.getElementById('violation').value = '';
+            document.getElementById('fine').value = '';
+
+            showResult('✅ Violation record saved successfully!\n\nRecord has been added to the system.');
+        }
+
+        function popViolation() {
+            const records = JSON.parse(localStorage.getItem('traffic') || '[]');
+            if (records.length === 0) {
+                showResult('❌ No violations available!');
+                return;
+            }
+
+            const popped = records.pop();
+            localStorage.setItem('traffic', JSON.stringify(records));
+
+            showResult(`⬇️ Latest Violation Removed\n\nDetails:\nViolation ID   : ${popped.vid}\nVehicle Number : ${popped.vehicle}\nDriver Name    : ${popped.driver}\nViolation Type : ${popped.violation}\nFine Amount    : ${popped.fine}\n\nViolation has been removed from the system.`);
+        }
+
+        function peekViolation() {
+            const records = JSON.parse(localStorage.getItem('traffic') || '[]');
+            if (records.length === 0) {
+                showResult('❌ No violations available!');
+                return;
+            }
+
+            const top = records[records.length - 1];
+
+            showResult(`👁️ Latest Violation\n\nDetails:\nViolation ID   : ${top.vid}\nVehicle Number : ${top.vehicle}\nDriver Name    : ${top.driver}\nViolation Type : ${top.violation}\nFine Amount    : ${top.fine}`);
+        }
+
+        function displayAll() {
+            const records = JSON.parse(localStorage.getItem('traffic') || '[]');
+            if (records.length === 0) {
+                showResult('No violations available!');
+                return;
+            }
+
+            let result = '📋 All Traffic Violations\n\n';
+            result += 'VID | Vehicle No | Driver Name | Violation Type | Fine\n';
+            result += '--------------------------------------------------------\n';
+            records.forEach(r => {
+                result += `${r.vid} | ${r.vehicle} | ${r.driver} | ${r.violation} | ${r.fine}\n`;
+            });
+            result += `\nTotal: ${records.length} violations`;
+
+            showResult(result);
+        }
+
+        function sortByFine() {
+            const records = JSON.parse(localStorage.getItem('traffic') || '[]');
+            if (records.length === 0) {
+                showResult('No violations to sort!');
+                return;
+            }
+
+            const sorted = [...records].sort((a, b) => b.fine - a.fine);
+            
+            let result = '📊 Violations Sorted by Fine (Highest First)\n\n';
+            result += 'VID | Vehicle No | Driver Name | Violation Type | Fine\n';
+            result += '--------------------------------------------------------\n';
+            sorted.forEach(r => {
+                result += `${r.vid} | ${r.vehicle} | ${r.driver} | ${r.violation} | ${r.fine}\n`;
+            });
+            result += `\nTotal: ${sorted.length} violations`;
+
+            showResult(result);
+        }
+
+        function showStats() {
+            const records = JSON.parse(localStorage.getItem('traffic') || '[]');
+            if (records.length === 0) {
+                showResult('No data available for statistics!');
+                return;
+            }
+
+            const total = records.length;
+            const totalFine = records.reduce((sum, r) => sum + parseInt(r.fine), 0);
+            const avgFine = (totalFine / total).toFixed(2);
+            const minFine = Math.min(...records.map(r => parseInt(r.fine)));
+            const maxFine = Math.max(...records.map(r => parseInt(r.fine)));
+
+            let result = '📈 Traffic Statistics\n\n';
+            result += `Total Violations    : ${total}\n`;
+            result += `Total Fine Amount   : ${totalFine}\n`;
+            result += `Average Fine        : ${avgFine}\n`;
+            result += `Minimum Fine        : ${minFine}\n`;
+            result += `Maximum Fine        : ${maxFine}`;
+
+            showResult(result);
+        }
+
+        function showResult(text) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            resultContent.textContent = text;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

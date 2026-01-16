@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citizen Management | Smart City</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="topbar">
+        <div class="logo">SMART<span>CITY</span></div>
+        <div class="tagline">Citizen Management</div>
+    </div>
+
+    <div class="hero">
+        <h1>Citizen Registration</h1>
+        <p>Register and manage citizen records in the smart city system</p>
+    </div>
+
+    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Citizen Registration Form</h2>
+
+            <div class="form-group">
+                <label>Citizen ID</label>
+                <input id="id" type="number" placeholder="Enter unique citizen ID">
+            </div>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input id="name" type="text" placeholder="Enter full name">
+            </div>
+
+            <div class="form-group">
+                <label>Age</label>
+                <input id="age" type="number" placeholder="Enter age">
+            </div>
+
+            <div class="form-group">
+                <label>CNIC</label>
+                <input id="cnic" type="text" placeholder="Enter CNIC number">
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input id="phone" type="text" placeholder="Enter phone number">
+            </div>
+
+            <div class="form-group">
+                <label>Address</label>
+                <input id="address" type="text" placeholder="Enter complete address">
+            </div>
+
+            <button onclick="saveCitizen()">💾 Register Citizen</button>
+        </div>
+    </div>
+
+    <!-- Operations Section -->
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Citizen Operations</h2>
+            
+            <div class="operations">
+                <button class="operation-btn" onclick="searchCitizen()">🔍 Search Citizen</button>
+                <button class="operation-btn" onclick="deleteCitizen()">🗑️ Delete Record</button>
+                <button class="operation-btn" onclick="displayAll()">📋 View All Records</button>
+                <button class="operation-btn" onclick="sortByName()">📊 Sort by Name</button>
+                <button class="operation-btn" onclick="sortByAge()">📊 Sort by Age</button>
+                <button class="operation-btn" onclick="showStats()">📈 View Statistics</button>
+            </div>
+
+            <div id="result" style="margin-top: 30px; padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: none;">
+                <h3 style="margin-bottom: 15px;">Result:</h3>
+                <pre id="resultContent" style="color: var(--text-primary); white-space: pre-wrap;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Smart City Management System | Citizen Management Module
+    </div>
+
+    <script>
+        function saveCitizen() {
+            const id = document.getElementById('id').value;
+            const name = document.getElementById('name').value;
+            const age = document.getElementById('age').value;
+            const cnic = document.getElementById('cnic').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+
+            if (!id || !name || !age || !cnic || !phone || !address) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            const text = `==============================
+   SMART CITY – CITIZEN RECORD
+==============================
+
+Citizen ID   : ${id}
+Full Name    : ${name}
+Age          : ${age}
+CNIC         : ${cnic}
+Phone        : ${phone}
+Address      : ${address}
+
+------------------------------
+Record Created Successfully
+------------------------------`;
+
+            const file = new Blob([text], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(file);
+            a.download = "Citizen_Record.txt";
+            a.click();
+
+            // Save to localStorage
+            const records = JSON.parse(localStorage.getItem('citizens') || '[]');
+            records.push({ id, name, age, cnic, phone, address });
+            localStorage.setItem('citizens', JSON.stringify(records));
+
+            // Clear form
+            document.getElementById('id').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('age').value = '';
+            document.getElementById('cnic').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('address').value = '';
+
+            showResult('✅ Citizen registered successfully!\n\nRecord has been saved to the system.');
+        }
+
+        function searchCitizen() {
+            const id = prompt('Enter Citizen ID to search:');
+            if (!id) return;
+
+            const records = JSON.parse(localStorage.getItem('citizens') || '[]');
+            const found = records.find(r => r.id == id);
+
+            if (found) {
+                showResult(`🔍 Citizen Found!\n\nDetails:\nID: ${found.id}\nName: ${found.name}\nAge: ${found.age}\nCNIC: ${found.cnic}\nPhone: ${found.phone}\nAddress: ${found.address}`);
+            } else {
+                showResult('❌ Citizen not found!');
+            }
+        }
+
+        function deleteCitizen() {
+            const id = prompt('Enter Citizen ID to delete:');
+            if (!id) return;
+
+            const records = JSON.parse(localStorage.getItem('citizens') || '[]');
+            const filtered = records.filter(r => r.id != id);
+
+            if (filtered.length < records.length) {
+                localStorage.setItem('citizens', JSON.stringify(filtered));
+                showResult(`✅ Citizen ID ${id} deleted successfully!`);
+            } else {
+                showResult('❌ Citizen not found!');
+            }
+        }
+
+        function displayAll() {
+            const records = JSON.parse(localStorage.getItem('citizens') || '[]');
+            if (records.length === 0) {
+                showResult('No records found!');
+                return;
+            }
+
+            const sorted = [...records].sort((a, b) => a.id - b.id);
+            
+            let result = '📋 All Citizen Records\n\n';
+            result += 'ID | Name | Age | CNIC | Phone\n';
+            result += '--------------------------------\n';
+            sorted.forEach(r => {
+                result += `${r.id} | ${r.name} | ${r.age} | ${r.cnic} | ${r.phone}\n`;
+            });
+            result += `\nTotal Records: ${sorted.length}`;
+
+            showResult(result);
+        }
+
+        function sortByName() {
+            const records = JSON.parse(localStorage.getItem('citizens') || '[]');
+            if (records.length === 0) {
+                showResult('No records to sort!');
+                return;
+            }
+
+            const sorted = [...records].sort((a, b) => a.name.localeCompare(b.name));
+            
+            let result = '📊 Citizens Sorted by Name\n\n';
+            result += 'ID | Name | Age | CNIC\n';
+            result += '----------------------\n';
+            sorted.forEach(r => {
+                result += `${r.id} | ${r.name} | ${r.age} | ${r.cnic}\n`;
+            });
+            result += `\nTotal: ${sorted.length} records`;
+
+            showResult(result);
+        }
+
+        function sortByAge() {
+            const records = JSON.parse(localStorage.getItem('citizens') || '[]');
+            if (records.length === 0) {
+                showResult('No records to sort!');
+                return;
+            }
+
+            const sorted = [...records].sort((a, b) => a.age - b.age);
+            
+            let result = '📊 Citizens Sorted by Age\n\n';
+            result += 'ID | Name | Age | CNIC\n';
+            result += '----------------------\n';
+            sorted.forEach(r => {
+                result += `${r.id} | ${r.name} | ${r.age} | ${r.cnic}\n`;
+            });
+            result += `\nTotal: ${sorted.length} records`;
+
+            showResult(result);
+        }
+
+        function showStats() {
+            const records = JSON.parse(localStorage.getItem('citizens') || '[]');
+            if (records.length === 0) {
+                showResult('No data available for statistics!');
+                return;
+            }
+
+            const total = records.length;
+            const sumAge = records.reduce((sum, r) => sum + parseInt(r.age), 0);
+            const avgAge = (sumAge / total).toFixed(2);
+            const minAge = Math.min(...records.map(r => parseInt(r.age)));
+            const maxAge = Math.max(...records.map(r => parseInt(r.age)));
+
+            let result = '📈 Citizen Statistics\n\n';
+            result += `Total Citizens    : ${total}\n`;
+            result += `Average Age       : ${avgAge} years\n`;
+            result += `Minimum Age       : ${minAge} years\n`;
+            result += `Maximum Age       : ${maxAge} years`;
+
+            showResult(result);
+        }
+
+        function showResult(text) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            resultContent.textContent = text;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility Management | Smart City</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="topbar">
+        <div class="logo">SMART<span>CITY</span></div>
+        <div class="tagline">Utility & Billing</div>
+    </div>
+
+    <div class="hero">
+        <h1>Utility Billing Management</h1>
+        <p>Manage electricity, water and gas billing records efficiently</p>
+    </div>
+
+    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Utility Billing Form</h2>
+
+            <div class="form-group">
+                <label>Utility ID</label>
+                <input id="uid" type="number" placeholder="Enter utility ID">
+            </div>
+
+            <div class="form-group">
+                <label>Utility Type</label>
+                <select id="utype">
+                    <option value="Electricity">Electricity</option>
+                    <option value="Water">Water</option>
+                    <option value="Gas">Gas</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Consumer Name</label>
+                <input id="cname" type="text" placeholder="Enter consumer name">
+            </div>
+
+            <div class="form-group">
+                <label>Units Consumed</label>
+                <input id="units" type="number" placeholder="Enter units consumed">
+            </div>
+
+            <div class="form-group">
+                <label>Bill Amount</label>
+                <input id="bill" type="number" placeholder="Enter bill amount">
+            </div>
+
+            <button onclick="saveUtility()">💾 Save Billing Record</button>
+        </div>
+    </div>
+
+    <!-- Operations Section -->
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Utility Operations</h2>
+            
+            <div class="operations">
+                <button class="operation-btn" onclick="searchUtility()">🔍 Search by ID</button>
+                <button class="operation-btn" onclick="deleteUtility()">🗑️ Delete Record</button>
+                <button class="operation-btn" onclick="displayAll()">📋 View All Records</button>
+                <button class="operation-btn" onclick="sortByBill()">📊 Sort by Bill Amount</button>
+                <button class="operation-btn" onclick="displayByType()">🔑 Filter by Type</button>
+                <button class="operation-btn" onclick="showStats()">📈 View Statistics</button>
+            </div>
+
+            <div id="result" style="margin-top: 30px; padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: none;">
+                <h3 style="margin-bottom: 15px;">Result:</h3>
+                <pre id="resultContent" style="color: var(--text-primary); white-space: pre-wrap;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Smart City Management System | Utility Management Module
+    </div>
+
+    <script>
+        function saveUtility() {
+            const uid = document.getElementById('uid').value;
+            const utype = document.getElementById('utype').value;
+            const cname = document.getElementById('cname').value;
+            const units = document.getElementById('units').value;
+            const bill = document.getElementById('bill').value;
+
+            if (!uid || !utype || !cname || !units || !bill) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            const text = `==============================
+ SMART CITY – UTILITY BILLING
+==============================
+
+Utility ID     : ${uid}
+Utility Type   : ${utype}
+Consumer Name  : ${cname}
+Units Consumed : ${units}
+Bill Amount    : ${bill}
+
+------------------------------
+Billing Record Saved
+------------------------------`;
+
+            const file = new Blob([text], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(file);
+            a.download = "Utility_Record.txt";
+            a.click();
+
+            // Save to localStorage
+            const records = JSON.parse(localStorage.getItem('utilities') || '[]');
+            records.push({ uid, utype, cname, units, bill });
+            localStorage.setItem('utilities', JSON.stringify(records));
+
+            // Clear form
+            document.getElementById('uid').value = '';
+            document.getElementById('utype').value = 'Electricity';
+            document.getElementById('cname').value = '';
+            document.getElementById('units').value = '';
+            document.getElementById('bill').value = '';
+
+            showResult('✅ Utility record saved successfully!\n\nRecord has been added to the system.');
+        }
+
+        function searchUtility() {
+            const uid = prompt('Enter Utility ID to search:');
+            if (!uid) return;
+
+            const records = JSON.parse(localStorage.getItem('utilities') || '[]');
+            const found = records.find(r => r.uid == uid);
+
+            if (found) {
+                showResult(`🔍 Utility Found!\n\nDetails:\nUtility ID     : ${found.uid}\nUtility Type   : ${found.utype}\nConsumer Name  : ${found.cname}\nUnits Consumed : ${found.units}\nBill Amount    : ${found.bill}`);
+            } else {
+                showResult('❌ Utility not found!');
+            }
+        }
+
+        function deleteUtility() {
+            const uid = prompt('Enter Utility ID to delete:');
+            if (!uid) return;
+
+            const records = JSON.parse(localStorage.getItem('utilities') || '[]');
+            const filtered = records.filter(r => r.uid != uid);
+
+            if (filtered.length < records.length) {
+                localStorage.setItem('utilities', JSON.stringify(filtered));
+                showResult(`✅ Utility ID ${uid} deleted successfully!`);
+            } else {
+                showResult('❌ Utility not found!');
+            }
+        }
+
+        function displayAll() {
+            const records = JSON.parse(localStorage.getItem('utilities') || '[]');
+            if (records.length === 0) {
+                showResult('No utility records available!');
+                return;
+            }
+
+            let result = '📋 All Utility Billing Records\n\n';
+            result += 'UID | Type | Consumer Name | Units | Bill\n';
+            result += '----------------------------------------\n';
+            records.forEach(r => {
+                result += `${r.uid} | ${r.utype} | ${r.cname} | ${r.units} | ${r.bill}\n`;
+            });
+            result += `\nTotal Records: ${records.length}`;
+
+            showResult(result);
+        }
+
+        function sortByBill() {
+            const records = JSON.parse(localStorage.getItem('utilities') || '[]');
+            if (records.length === 0) {
+                showResult('No records to sort!');
+                return;
+            }
+
+            const sorted = [...records].sort((a, b) => b.bill - a.bill);
+            
+            let result = '📊 Utilities Sorted by Bill Amount (Highest First)\n\n';
+            result += 'UID | Type | Consumer Name | Units | Bill\n';
+            result += '----------------------------------------\n';
+            sorted.forEach(r => {
+                result += `${r.uid} | ${r.utype} | ${r.cname} | ${r.units} | ${r.bill}\n`;
+            });
+            result += `\nTotal: ${sorted.length} records`;
+
+            showResult(result);
+        }
+
+        function displayByType() {
+            const type = prompt('Enter Utility Type (Electricity/Water/Gas):');
+            if (!type) return;
+
+            const records = JSON.parse(localStorage.getItem('utilities') || '[]');
+            const filtered = records.filter(r => r.utype.toLowerCase() === type.toLowerCase());
+
+            if (filtered.length === 0) {
+                showResult(`No records found for type: ${type}`);
+                return;
+            }
+
+            let result = `🔑 Utility Records for Type: ${type}\n\n`;
+            result += 'UID | Consumer Name | Units | Bill\n';
+            result += '--------------------------------\n';
+            filtered.forEach(r => {
+                result += `${r.uid} | ${r.cname} | ${r.units} | ${r.bill}\n`;
+            });
+            result += `\nTotal ${type} Records: ${filtered.length}`;
+
+            showResult(result);
+        }
+
+        function showStats() {
+            const records = JSON.parse(localStorage.getItem('utilities') || '[]');
+            if (records.length === 0) {
+                showResult('No data available for statistics!');
+                return;
+            }
+
+            const total = records.length;
+            const totalBill = records.reduce((sum, r) => sum + parseInt(r.bill), 0);
+            const totalUnits = records.reduce((sum, r) => sum + parseInt(r.units), 0);
+            const avgBill = (totalBill / total).toFixed(2);
+            const avgUnits = (totalUnits / total).toFixed(2);
+            
+            const electricity = records.filter(r => r.utype === 'Electricity').length;
+            const water = records.filter(r => r.utype === 'Water').length;
+            const gas = records.filter(r => r.utype === 'Gas').length;
+
+            let result = '📈 Utility Statistics\n\n';
+            result += `Total Records        : ${total}\n`;
+            result += `Total Bill Amount    : ${totalBill}\n`;
+            result += `Total Units Consumed : ${totalUnits}\n`;
+            result += `Average Bill         : ${avgBill}\n`;
+            result += `Average Units        : ${avgUnits}\n`;
+            result += `Electricity Records  : ${electricity}\n`;
+            result += `Water Records        : ${water}\n`;
+            result += `Gas Records          : ${gas}`;
+
+            showResult(result);
+        }
+
+        function showResult(text) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            resultContent.textContent = text;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

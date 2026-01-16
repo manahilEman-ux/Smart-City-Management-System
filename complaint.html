@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Management | Smart City</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="topbar">
+        <div class="logo">SMART<span>CITY</span></div>
+        <div class="tagline">Complaint Management</div>
+    </div>
+
+    <div class="hero">
+        <h1>Citizen Complaint Registration</h1>
+        <p>Submit and manage citizen complaints for efficient resolution</p>
+    </div>
+
+    <a href="index.html" class="back-btn">← Back to Dashboard</a>
+
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Complaint Registration Form</h2>
+
+            <div class="form-group">
+                <label>Complaint ID</label>
+                <input id="cid" type="number" placeholder="Enter complaint ID">
+            </div>
+
+            <div class="form-group">
+                <label>Citizen Name</label>
+                <input id="cname" type="text" placeholder="Enter citizen name">
+            </div>
+
+            <div class="form-group">
+                <label>Complaint Type</label>
+                <select id="ctype">
+                    <option value="Emergency">Emergency</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Normal">Normal</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Area / Location</label>
+                <input id="area" type="text" placeholder="Enter area/location">
+            </div>
+
+            <div class="form-group">
+                <label>Complaint Description</label>
+                <textarea id="desc" placeholder="Enter detailed description"></textarea>
+            </div>
+
+            <button onclick="saveComplaint()">📝 Submit Complaint</button>
+        </div>
+    </div>
+
+    <!-- Operations Section -->
+    <div class="form-container">
+        <div class="form-card">
+            <h2>Complaint Operations</h2>
+            
+            <div class="operations">
+                <button class="operation-btn" onclick="processNext()">⚡ Process Next Complaint</button>
+                <button class="operation-btn" onclick="displayPriorityQueue()">📋 View by Priority</button>
+                <button class="operation-btn" onclick="displayStandardQueue()">📋 View All Complaints</button>
+                <button class="operation-btn" onclick="displayAll()">📊 View Complete List</button>
+                <button class="operation-btn" onclick="showStats()">📈 View Statistics</button>
+            </div>
+
+            <div id="result" style="margin-top: 30px; padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: none;">
+                <h3 style="margin-bottom: 15px;">Result:</h3>
+                <pre id="resultContent" style="color: var(--text-primary); white-space: pre-wrap;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Smart City Management System | Complaint Management Module
+    </div>
+
+    <script>
+        function saveComplaint() {
+            const cid = document.getElementById('cid').value;
+            const cname = document.getElementById('cname').value;
+            const ctype = document.getElementById('ctype').value;
+            const area = document.getElementById('area').value;
+            const desc = document.getElementById('desc').value;
+
+            if (!cid || !cname || !ctype || !area || !desc) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            const priority = ctype === 'Emergency' ? 1 : ctype === 'Urgent' ? 2 : 3;
+
+            const text = `==============================
+ SMART CITY – CITIZEN COMPLAINT
+==============================
+
+Complaint ID      : ${cid}
+Citizen Name      : ${cname}
+Complaint Type    : ${ctype}
+Priority          : ${priority}
+Area / Location   : ${area}
+Description       : ${desc}
+
+------------------------------
+Complaint Registered Successfully
+------------------------------`;
+
+            const file = new Blob([text], { type: "text/plain" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(file);
+            a.download = "Complaint_Record.txt";
+            a.click();
+
+            // Save to localStorage
+            const records = JSON.parse(localStorage.getItem('complaints') || '[]');
+            records.push({ cid, cname, ctype, area, desc, priority });
+            localStorage.setItem('complaints', JSON.stringify(records));
+
+            // Clear form
+            document.getElementById('cid').value = '';
+            document.getElementById('cname').value = '';
+            document.getElementById('ctype').value = 'Normal';
+            document.getElementById('area').value = '';
+            document.getElementById('desc').value = '';
+
+            showResult(`✅ Complaint registered successfully!\n\nPriority: ${ctype}\nComplaint has been added to the system for processing.`);
+        }
+
+        function processNext() {
+            const records = JSON.parse(localStorage.getItem('complaints') || '[]');
+            if (records.length === 0) {
+                showResult('❌ No complaints in queue!');
+                return;
+            }
+
+            records.sort((a, b) => a.priority - b.priority);
+            const next = records.shift();
+            localStorage.setItem('complaints', JSON.stringify(records));
+
+            showResult(`⚡ Processing Next Complaint\n\nComplaint ID    : ${next.cid}\nCitizen Name    : ${next.cname}\nComplaint Type  : ${next.ctype}\nPriority        : ${next.priority}\nArea            : ${next.area}\nDescription     : ${next.desc}\n\nComplaint has been processed and removed from queue.`);
+        }
+
+        function displayPriorityQueue() {
+            const records = JSON.parse(localStorage.getItem('complaints') || '[]');
+            if (records.length === 0) {
+                showResult('No complaints available!');
+                return;
+            }
+
+            const sorted = [...records].sort((a, b) => a.priority - b.priority);
+            
+            let result = '📋 Complaints by Priority\n\n';
+            sorted.forEach((r, i) => {
+                result += `[${i + 1}] Priority: ${r.priority} (${r.ctype})\n`;
+                result += `    ID: ${r.cid} | Name: ${r.cname}\n`;
+                result += `    Area: ${r.area}\n`;
+                result += `    Description: ${r.desc}\n\n`;
+            });
+            result += `Total: ${sorted.length} complaints`;
+
+            showResult(result);
+        }
+
+        function displayStandardQueue() {
+            const records = JSON.parse(localStorage.getItem('complaints') || '[]');
+            if (records.length === 0) {
+                showResult('No complaints available!');
+                return;
+            }
+
+            let result = '📋 All Complaints\n\n';
+            records.forEach((r, i) => {
+                result += `[${i + 1}]\n`;
+                result += `    ID: ${r.cid} | Name: ${r.cname}\n`;
+                result += `    Type: ${r.ctype} | Priority: ${r.priority}\n`;
+                result += `    Area: ${r.area}\n\n`;
+            });
+            result += `Total: ${records.length} complaints`;
+
+            showResult(result);
+        }
+
+        function displayAll() {
+            const records = JSON.parse(localStorage.getItem('complaints') || '[]');
+            if (records.length === 0) {
+                showResult('No complaints available!');
+                return;
+            }
+
+            let result = '📊 Complete Complaint List\n\n';
+            result += 'ID | Name | Type | Priority | Area\n';
+            result += '------------------------------------\n';
+            records.forEach(r => {
+                result += `${r.cid} | ${r.cname} | ${r.ctype} | ${r.priority} | ${r.area}\n`;
+            });
+            result += `\nTotal: ${records.length} complaints`;
+
+            showResult(result);
+        }
+
+        function showStats() {
+            const records = JSON.parse(localStorage.getItem('complaints') || '[]');
+            if (records.length === 0) {
+                showResult('No data available for statistics!');
+                return;
+            }
+
+            const total = records.length;
+            const emergency = records.filter(r => r.priority === 1).length;
+            const urgent = records.filter(r => r.priority === 2).length;
+            const normal = records.filter(r => r.priority === 3).length;
+
+            let result = '📈 Complaint Statistics\n\n';
+            result += `Total Complaints     : ${total}\n`;
+            result += `Emergency Complaints : ${emergency}\n`;
+            result += `Urgent Complaints    : ${urgent}\n`;
+            result += `Normal Complaints    : ${normal}`;
+
+            showResult(result);
+        }
+
+        function showResult(text) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            resultContent.textContent = text;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
